@@ -13,15 +13,15 @@ import matplotlib.pyplot as plt
 import random
 
 # Define the hyperparameters
-POPULATION_SIZE = 100
-NUM_GENERATIONS = 100
+POPULATION_SIZE = 1000
+NUM_GENERATIONS = 1000
 CROSSOVER_RATE = 0.8
 MUTATION_RATE = 0.1
 
 # Define the diophantine equation parameters
-CHROMOSOME_LENGTH = 5 # Number of variables in the equation
-COEFFICIENTS = np.array([1, 2, 3, 4, 5]) # Coefficients for each variable in the equation
-b = 35 # Value for the right hand side of the equation
+CHROMOSOME_LENGTH = 6 # Number of variables in the equation
+COEFFICIENTS = np.array([813, 2147, 5323, 13411, 32143, 78577]) # Coefficients for each variable in the equation
+b = 93573 # Value for the right hand side of the equation
 
 
 def initialize_population(population_size, chromosome_length, upper_limit) -> np.ndarray:
@@ -35,7 +35,7 @@ def initialize_population(population_size, chromosome_length, upper_limit) -> np
     :param upper_limit:
     :return: np.ndarray: A 2D array representing the initialized population of individuals.
     """
-    return np.random.randint(0, upper_limit + 1, size=(population_size, chromosome_length))
+    return np.random.randint(-5, upper_limit + 1, size=(population_size, chromosome_length))
 
 
 def get_fitness(individuals, coefficients, b) -> np.ndarray:
@@ -69,9 +69,11 @@ def roulette_wheel_selection(population, fitness) -> np.ndarray:
     """
     # Calculate the total fitness value of the entire population
     total_fitness = np.sum(fitness)
+    pop_size = len(population)
 
     # Get the probability of selecting each individual
-    probabilities = fitness / total_fitness
+    # probabilities = fitness / total_fitness
+    probabilities = (1 - (fitness / total_fitness)) / (pop_size - 1)
 
     # Select individuals based on their probabilities
     selected_indices = np.random.choice(np.arange(len(population)), size=len(population), p=probabilities)
@@ -91,6 +93,11 @@ def one_point_crossover(parent1, parent2) -> tuple[np.ndarray, np.ndarray]:
     offspring_2 = np.concatenate((parent2[:crossover_point], parent1[crossover_point:]))
     return offspring_1, offspring_2
 
+def uniform_crossover(parent_1, parent2) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Preforms uniform crossover
+    """
+    #TODO implement uniform crossover for two parent
 
 def scramble_mutation(individuals) -> list:
     """
@@ -115,7 +122,7 @@ def scramble_mutation(individuals) -> list:
 
 def run_genetic_algorithm():
     """
-    Runs the genetic algorithm to find integer solution to the specified linear
+    Runs the genetic algorithm to find integer solutions to the specified linear
     diophantine equation
     """
     # Track the best fitness value in each generation
@@ -123,7 +130,7 @@ def run_genetic_algorithm():
     best_chromosomes = []
 
     # Initialize the population
-    population = initialize_population(POPULATION_SIZE, CHROMOSOME_LENGTH, 10)
+    population = initialize_population(POPULATION_SIZE, CHROMOSOME_LENGTH, 5)
     for _ in range(NUM_GENERATIONS):
 
         # Calculate fitness of each individual in the population
