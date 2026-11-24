@@ -75,6 +75,7 @@ def roulette_wheel_selection(population, fitness_values) -> np.ndarray:
     selected_indices = np.random.choice(np.arange(len(population)), size=len(population), p=probabilities)
     return population[selected_indices]
 
+
 def creep_mutation(individuals):
     """
     Adds or subtracts a small two decimal value to the individual x candidate
@@ -112,8 +113,6 @@ def run_genetic_algorithm():
 
     print("Fitness History:", [round(float(x), 2) for x in best_fitness_history])
     print("Chromosome", [round(float(x), 2) for x in best_chromosomes])
-
-
 
 
 def main():

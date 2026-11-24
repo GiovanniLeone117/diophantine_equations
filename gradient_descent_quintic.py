@@ -7,8 +7,11 @@ where p(x) = 0. Continuous is defined as the polynomial being differentiable at 
 import numpy as np
 
 # Coefficients for the quintic equation
-COEFFICIENTS = [1, 0, 0, 0, -1, 0] # The real valued root solutions is x = 1, x = -1, x = 0
-X = 0.5 # Random initial guess for x
+COEFFICIENTS = [1, 0, 0, 0, -1, 0.6] # The real valued root solutions is x = 1, x = -1, x = 0
+X = 1.4 # Random initial guess for x
+
+solution = 1
+tolerant_residual = 1e-10
 
 # HYPERPARAMETERS
 #TODO this is a fixed learning rate, adjust it to be adaptive to the gradient to prevent overshooting the minimum of the loss function.
@@ -23,7 +26,7 @@ def loss_calculation(x: float):
     """
     p_x = np.polyval(COEFFICIENTS, x)
     loss = p_x ** 2
-    return loss
+    return loss, p_x
 
 
 def gradient_calculation(x: float):
@@ -58,10 +61,14 @@ def gradient_descent(x: float):
     of the loss function.
     """
     for i in range(NUM_ITERATIONS):
-        loss = loss_calculation(x)
+        loss, p_x = loss_calculation(x)
         gradient = gradient_calculation(x)
         print(f"Iteration {i + 1}: Loss = {loss}, Gradient = {gradient}, x = {x}")
         x = update_x(gradient, x)
+        if abs(p_x) <= tolerant_residual:
+            print("Converged")
+            break
+
 
 
 def main():
