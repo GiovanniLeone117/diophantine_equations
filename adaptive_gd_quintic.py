@@ -15,15 +15,15 @@ X = 1.4 # Initial guess for x
 # solution = 1
 
 # Converge if f(x) is this close to 0
-tolerant_residual = 1e-10
+tolerant_residual = 1e-5
 
 # HYPERPARAMETERS
 LEARNING_RATE = 0.005
 NUM_ITERATIONS = 5000
-BETA1 = 0.90 # This hyperparameter is used to calculate the weighted moving average of previous gradients
+BETA1 = 0.98 # This hyperparameter is used to calculate the weighted moving average of previous gradients
 BETA2 = 0.90
 
-OPTIMIZER = "GD_MOMENTUM"
+OPTIMIZER = "ADAM"
 
 
 def loss_calculation(x: float):
@@ -68,12 +68,12 @@ def second_moment_calculation(gradient, vt, iteration):
     Calculate the weighted moving average of the previous squared gradients
     with bias correction (second moment)
     """
-    new_vt = (BETA2 * vt) + (1 - BETA2) * (gradient ** gradient)
+    new_vt = (BETA2 * vt) + (1 - BETA2) * (gradient ** 2)
     bias_corrected_vt = new_vt / (1 - BETA2**iteration)
     return bias_corrected_vt, new_vt
 
 
-def update_x(current_x, gradient, first_moment, second_moment, gradient_sum, epsilon = 1e-8):
+def update_x(current_x, gradient, first_moment, second_moment, squared_gradient_sum, epsilon = 1e-8):
     """
     Update the value of x by subtracting the product of the learning rate and momentum
     from the current x
@@ -83,35 +83,39 @@ def update_x(current_x, gradient, first_moment, second_moment, gradient_sum, eps
         return current_x - LEARNING_RATE * (first_moment / (math.sqrt(second_moment) + epsilon))
 
     # Use RMSProp parameter update rule
-    elif OPTIMIZER == "RMSProp":
+    elif OPTIMIZER == "RMSPROP":
         return current_x - LEARNING_RATE * (gradient / (math.sqrt(second_moment) + epsilon))
 
     # Use AdaGrad parameter update rule
     elif OPTIMIZER == "ADAGRAD":
-        return current_x - LEARNING_RATE # TODO finish this update rule, have to keep track of the cumulative sum of square gradients
+        return current_x - LEARNING_RATE * (gradient / (math.sqrt(squared_gradient_sum) + epsilon))
 
+    # Use momentum only to calculate the parameter update
     elif OPTIMIZER == "GD_MOMENTUM":
-        # Use momentum only to calculate the parameter update
         return current_x - LEARNING_RATE * first_moment
 
 
-def gradient_descent(x: float, uncorrected_mt, uncorrected_vt):
+def gradient_descent(x: float, uncorrected_mt, uncorrected_vt, squared_gradient_sum):
     """
     Run the gradient descent algorithm for a specified number of iterations.
     Each iteration will adjust the value of x to achieve optimization
     of the loss function.
     """
-    for i in range(1, NUM_ITERATIONS):
+    for t in range(1, NUM_ITERATIONS):
         loss, p_x = loss_calculation(x)
         gradient = gradient_calculation(x)
-        corrected_mt, uncorrected_mt = first_moment_calculation(gradient, uncorrected_mt, i)
-        #TODO call vt_calculation
+        corrected_mt, uncorrected_mt = first_moment_calculation(gradient, uncorrected_mt, t)
+        corrected_vt, uncorrected_vt = second_moment_calculation(gradient, uncorrected_vt, t)
+        squared_gradient_sum += gradient * gradient
 
-        print(f"Iteration {i + 1}: Loss = {loss}, Gradient = {gradient}, x = {x}")
-        x = update_x(corrected_mt, x)
+        #print(f"Iteration {t}: Loss = {loss}, Gradient = {gradient}, x = {x}, squared_gradient_sum = {squared_gradient_sum}, first_moment = {corrected_mt}, second_moment = {corrected_vt}")
+        print(f"Iteration {t}: Loss = {loss}, Gradient = {gradient}, x = {x}, first_moment = {corrected_mt}, second_moment = {corrected_vt}")
+
+        x = update_x(x, gradient, corrected_mt, corrected_vt, squared_gradient_sum)
         if abs(p_x) <= tolerant_residual:
             print("Converged")
             break
+
 
 def main():
 
@@ -123,7 +127,7 @@ def main():
     new_x = update_x(gradient, X)
     print(new_x)
     """
-    gradient_descent(X, 0, 0)
+    gradient_descent(X, 0, 0, 0)
 
 
 if __name__ == "__main__":

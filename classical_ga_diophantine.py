@@ -17,6 +17,7 @@ POPULATION_SIZE = 1000
 NUM_GENERATIONS = 1000
 CROSSOVER_RATE = 0.8
 MUTATION_RATE = 0.1
+TOURNAMENT_SIZE = 3
 
 # Define the diophantine equation parameters
 CHROMOSOME_LENGTH = 6 # Number of variables in the equation
@@ -35,7 +36,7 @@ def initialize_population(population_size, chromosome_length, upper_limit) -> np
     :param upper_limit:
     :return: np.ndarray: A 2D array representing the initialized population of individuals.
     """
-    return np.random.randint(-5, upper_limit + 1, size=(population_size, chromosome_length))
+    return np.random.randint(0, upper_limit + 1, size=(population_size, chromosome_length))
 
 
 def get_fitness(individuals, coefficients, b) -> np.ndarray:
@@ -80,6 +81,19 @@ def roulette_wheel_selection(population, fitness) -> np.ndarray:
     return population[selected_indices]
 
 
+def tournament_selection(population, fitness, tournament_size=TOURNAMENT_SIZE) -> np.ndarray:
+    """
+    Selects parents via tournament selection. For each slot, tournament_size
+    individuals are drawn at random (with replacement) and the one with the
+    lowest fitness wins.
+    """
+    pop_size = len(population)
+    contestants = np.random.randint(0, pop_size, size=(pop_size, tournament_size))
+    best_in_each = np.argmin(fitness[contestants], axis=1)
+    winners = contestants[np.arange(pop_size), best_in_each]
+    return population[winners]
+
+
 def one_point_crossover(parent1, parent2) -> tuple[np.ndarray, np.ndarray]:
     """
     Randomly selects a single crossover point in two parents and creates
@@ -93,11 +107,17 @@ def one_point_crossover(parent1, parent2) -> tuple[np.ndarray, np.ndarray]:
     offspring_2 = np.concatenate((parent2[:crossover_point], parent1[crossover_point:]))
     return offspring_1, offspring_2
 
+
 def uniform_crossover(parent_1, parent2) -> tuple[np.ndarray, np.ndarray]:
     """
-    Preforms uniform crossover
+    Performs uniform crossover: each gene is taken from parent_1 or parent2 with
+    equal probability, and the second offspring receives the opposite choice.
     """
-    #TODO implement uniform crossover for two parent
+    mask = np.random.rand(len(parent_1)) < 0.5
+    offspring_1 = np.where(mask, parent_1, parent2)
+    offspring_2 = np.where(mask, parent2, parent_1)
+    return offspring_1, offspring_2
+
 
 def scramble_mutation(individuals) -> list:
     """
@@ -130,7 +150,7 @@ def run_genetic_algorithm():
     best_chromosomes = []
 
     # Initialize the population
-    population = initialize_population(POPULATION_SIZE, CHROMOSOME_LENGTH, 5)
+    population = initialize_population(POPULATION_SIZE, CHROMOSOME_LENGTH, 15)
     for _ in range(NUM_GENERATIONS):
 
         # Calculate fitness of each individual in the population
@@ -138,7 +158,7 @@ def run_genetic_algorithm():
         best_fitness_history.append(np.min(fitness))
         best_chromosomes.append(population[np.argmin(fitness)])
 
-        parents = roulette_wheel_selection(population, fitness)
+        parents = tournament_selection(population, fitness, TOURNAMENT_SIZE)
         offspring = []
 
         # Shuffle the parents to create random pairs for crossover
@@ -147,16 +167,15 @@ def run_genetic_algorithm():
 
             # Apply crossover probability
             if np.random.rand() < CROSSOVER_RATE:
-                candidate_1, candidate_2 = one_point_crossover(parents[i], parents[i+1])
+                candidate_1, candidate_2 = uniform_crossover(parents[i], parents[i+1])
             else:
                 candidate_1, candidate_2 = parents[i], parents[i+1]
 
             offspring.extend([candidate_1, candidate_2])
 
-            # Apply potential mutation to the offspring
-            mutated_offspring = scramble_mutation(offspring)
-
-            population = np.array(mutated_offspring)
+        # Apply potential mutation to the offspring
+        mutated_offspring = scramble_mutation(offspring)
+        population = np.array(mutated_offspring)
 
     clean_history = [int(f) for f in best_fitness_history]
     print(clean_history)

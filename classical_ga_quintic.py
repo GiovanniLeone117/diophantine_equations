@@ -7,7 +7,6 @@ a_1x_1^5 + | - a_2x_2^4.... + | - ... a_nx_n^1 + | - c = 0 where a_n, x_n and c 
 The algorithm will use a population of potential candidate solutions and will utilize selection,
 and mutation to optimize the population towards the set of integer solutions that
 satisfy the equation. Traditional crossover will not be used in this implementation
-
 """
 
 import numpy as np
@@ -90,6 +89,7 @@ def creep_mutation(individuals):
                 individuals[i] -= random_val
 
     return individuals
+
 
 def run_genetic_algorithm():
     """
